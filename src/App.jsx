@@ -54,7 +54,8 @@ const navItems = [
 ];
 
 const btn = "rounded-md bg-[#E53935] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#c62828]";
-const card = "rounded-[10px] border border-[#FFCDD2] bg-white";
+const cardBase = "rounded-[10px] border border-[#FFCDD2]";
+const card = cardBase + " bg-white";
 const input = "w-full rounded-[4px] border border-[#FFCDD2] bg-white px-3 py-2 text-sm outline-none focus:border-[#E53935]";
 
 function Login({ onLogin }) {
@@ -417,7 +418,7 @@ function Tables({ onOpen }) {
       {data.map((t) => {
         const bg = t.status === "occupied" ? "bg-[#B71C1C] text-white border-[#B71C1C]" : t.status === "reserved" ? "bg-[#FFF3E0] text-[#8D4E00]" : "bg-[#E8F5E9] text-[#1B5E20]";
         const label = t.status === "occupied" ? `Occupied — ${t.details}` : t.status === "reserved" ? `Reserved — ${t.details}` : "Available";
-        return <button key={t.id} onClick={() => t.status === "occupied" && onOpen({ id: t.id, items: "Chicken Biriyani x2, Mutton Curry x1, Lassi x2", time: "Seated 45 min ago", bill: "₹1,850" })} className={`${card} ${bg} min-h-[96px] p-3 text-left transition-transform active:scale-95`}><p className="text-lg font-extrabold">T{t.id}</p><p className="text-[10px] font-semibold leading-tight">{label}</p></button>;
+        return <button key={t.id} onClick={() => t.status === "occupied" && onOpen({ id: t.id, items: "Chicken Biriyani x2, Mutton Curry x1, Lassi x2", time: "Seated 45 min ago", bill: "₹1,850" })} className={`${cardBase} ${bg} min-h-[96px] p-3 text-left transition-transform active:scale-95`}><p className="text-lg font-extrabold">T{t.id}</p><p className="text-[10px] font-semibold leading-tight">{label}</p></button>;
       })}
     </div>
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-white p-3 border border-[#FFCDD2] shadow-sm">
