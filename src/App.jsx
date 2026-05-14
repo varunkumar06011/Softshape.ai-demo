@@ -281,34 +281,21 @@ const card = cardBase + " bg-white";
 const input = "w-full rounded-[4px] border border-[#FFCDD2] bg-white px-3 py-2 text-sm outline-none focus:border-[#E53935]";
 
 function Login({ onLogin }) {
-  const [merge, setMerge] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setMerge(true), 2000);
-    return () => clearTimeout(t);
-  }, []);
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#FFF5F5] p-4 md:p-6">
-      <div className="w-full max-w-lg rounded-2xl border border-[#FFCDD2] bg-white p-6 md:p-10 shadow-xl">
-        <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-[#E53935]">softshape<span className="text-[#EF9A9A]">.ai</span></h1>
-          <p className="mt-2 text-sm md:text-base font-medium text-[#6B6B6B]">Where AI shapes your business</p>
+      <div className="w-full max-w-lg rounded-2xl border border-[#FFCDD2] bg-white pt-4 md:pt-6 px-6 md:px-10 pb-6 md:pb-10 shadow-xl">
+        <div className="mb-0 flex items-center justify-center">
+          <img 
+            src="/logo softshape.ai.png" 
+            alt="softshape.ai logo" 
+            className="w-full max-w-[280px] sm:max-w-[400px] md:max-w-[480px] h-auto object-contain transition-all duration-700 hover:scale-[1.03]" 
+          />
         </div>
 
-        <div className="my-8 flex items-center justify-center gap-4">
-          {!merge ? (
-            <div className="flex gap-2 md:gap-3 flex-wrap justify-center">
-              {["Designer", "Accountant", "Captain", "Surveillance"].map((r) => (
-                <div key={r} className="h-14 w-14 md:h-16 md:w-16 animate-pulse rounded-full bg-[#FFEBEE] p-2 text-center text-[10px] font-bold text-[#B71C1C] flex items-center justify-center border border-[#EF9A9A]">
-                  {r}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="relative group cursor-pointer">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#E53935] to-[#EF9A9A] rounded-full blur opacity-40 group-hover:opacity-75 transition duration-1000"></div>
-              <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#E53935] bg-[#FFEBEE] font-black text-[#E53935] shadow-lg animate-bounce-slow text-lg">Spire.ai</div>
-            </div>
-          )}
+        <div className="mb-6 md:mb-8 text-center">
+          <p className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-[#6B6B6B] opacity-50">
+            Powered by <span className="text-[#1A1A1A] opacity-100">Vtech</span>
+          </p>
         </div>
 
         <div className="space-y-4">
