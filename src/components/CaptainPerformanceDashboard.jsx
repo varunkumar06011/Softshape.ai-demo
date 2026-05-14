@@ -1,22 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { fetchCaptainPerformance } from "../services/captainPerformanceService";
 
-export default function CaptainPerformanceDashboard() {
-  const [captains, setCaptains] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+export default function CaptainPerformanceDashboard({ captains, recentSoldItems }) {
   const [range, setRange] = useState("Daily");
 
-  useEffect(() => {
-    fetchCaptainPerformance()
-      .then(setCaptains)
-      .catch((e) => setError(e.message || "Unable to load captain analytics"))
-      .finally(() => setLoading(false));
-  }, []);
-
   const ranked = useMemo(
-    () => [...captains].sort((a, b) => b.sales - a.sales).map((captain, idx) => ({ ...captain, rank: idx + 1 })),
+    () => [...(captains || [])].sort((a, b) => b.sales - a.sales).map((captain, idx) => ({ ...captain, rank: idx + 1 })),
     [captains],
   );
 
@@ -31,15 +20,30 @@ export default function CaptainPerformanceDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Top Performer" value={ranked[0]?.name ?? "-"} />
-        <Stat label="Highest Sales" value={`₹${ranked[0]?.sales?.toLocaleString?.() ?? 0}`} />
-        <Stat label="Best Rating" value={Math.max(...ranked.map((x) => x.rating), 0).toFixed(1)} />
-        <Stat label="Avg Completion Speed" value={`${Math.round(ranked.reduce((a, c) => a + c.speed, 0) / (ranked.length || 1))} mins`} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Stat label="Top Performer" value={ranked[0]?.name ?? "-"} />
+          <Stat label="Highest Sales" value={`₹${ranked[0]?.sales?.toLocaleString?.() ?? 0}`} />
+          <Stat label="Best Rating" value={Math.max(...ranked.map((x) => x.rating), 0).toFixed(1)} />
+          <Stat label="Avg Completion Speed" value={`${Math.round(ranked.reduce((a, c) => a + c.speed, 0) / (ranked.length || 1))} mins`} />
+        </div>
+        
+        <div className="rounded-[10px] border border-[#FFCDD2] bg-white p-4">
+          <h4 className="mb-3 text-xs font-bold uppercase text-[#B71C1C]">Recently Sold Items</h4>
+          <div className="space-y-2">
+            {(recentSoldItems || []).map((item, i) => (
+              <div key={i} className="flex items-center justify-between border-b border-[#FFEBEE] pb-2 last:border-0 last:pb-0">
+                <div>
+                  <p className="text-xs font-bold">{item.name}</p>
+                  <p className="text-[10px] text-[#6B6B6B]">{item.qty} units • {item.time}</p>
+                </div>
+                <p className="text-xs font-black text-[#2E7D32]">₹{item.price}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {loading && <div className="h-14 animate-pulse rounded bg-[#FFEBEE]" />}
-      {error && <div className="rounded border border-[#E53935] bg-[#FFEBEE] p-2 text-sm text-[#B71C1C]">{error}</div>}
 
       {!!ranked.length && (
         <>

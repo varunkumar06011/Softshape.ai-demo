@@ -12,10 +12,12 @@ import {
   Package,
   Search,
   Settings,
+  Smartphone,
   ShoppingCart,
   Sparkles,
   Table2,
   UtensilsCrossed,
+  ArrowLeft,
 } from "lucide-react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart } from "recharts";
 import AIDishCreationModal from "./components/AIDishCreationModal";
@@ -280,10 +282,17 @@ const cardBase = "rounded-[10px] border border-[#FFCDD2]";
 const card = cardBase + " bg-white";
 const input = "w-full rounded-[4px] border border-[#FFCDD2] bg-white px-3 py-2 text-sm outline-none focus:border-[#E53935]";
 
-function Login({ onLogin }) {
+function Login({ onLogin, onBack }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#FFF5F5] p-4 md:p-6">
-      <div className="w-full max-w-lg rounded-2xl border border-[#FFCDD2] bg-white pt-4 md:pt-6 px-6 md:px-10 pb-6 md:pb-10 shadow-xl">
+      <div className="w-full max-w-lg rounded-2xl border border-[#FFCDD2] bg-white pt-4 md:pt-6 px-6 md:px-10 pb-6 md:pb-10 shadow-xl relative overflow-hidden">
+        <button 
+          onClick={onBack}
+          className="absolute left-4 top-4 rounded-full p-2 text-[#B71C1C] hover:bg-[#FFEBEE] transition-all active:scale-90"
+          title="Back to Portal Selection"
+        >
+          <ArrowLeft size={24} />
+        </button>
         <div className="mb-0 flex items-center justify-center">
           <img
             src="/logo softshape.ai.png"
@@ -319,7 +328,24 @@ function Login({ onLogin }) {
   );
 }
 
+const CAPTAINS = [
+  { id: "C1", name: "Lakshmi", img: "👩‍💼", shift: "11AM-8PM", tables: [12, 13, 14, 15], sales: 50300, orders: 44, rating: 4.9, speed: 12 },
+  { id: "C2", name: "Raju", img: "👨‍💼", shift: "9AM-6PM", tables: [1, 2, 3, 4], sales: 48200, orders: 42, rating: 4.8, speed: 13 },
+  { id: "C3", name: "Meena", img: "👩‍💼", shift: "10AM-7PM", tables: [5, 6, 7, 8], sales: 42900, orders: 38, rating: 4.6, speed: 14 },
+  { id: "C4", name: "Suresh", img: "👨‍💼", shift: "12PM-9PM", tables: [9, 10, 11], sales: 39750, orders: 35, rating: 4.4, speed: 16 },
+];
+
+const INITIAL_ACTIVITY = [
+  { id: 1, text: "Raju closed Table 4 bill for ₹2,450", time: "2 min ago", type: "success" },
+  { id: 2, text: "Lakshmi sent KOT for Table 12", time: "5 min ago", type: "info" },
+  { id: 3, text: "Meena received ₹320 tip via UPI", time: "12 min ago", type: "tip" },
+  { id: 4, text: "Suresh sold 3 Premium Thalis", time: "15 min ago", type: "sales" },
+];
+
+import CaptainApp from "./components/CaptainApp";
+
 function App() {
+  const [appMode, setAppMode] = useState(null); // null (portal), 'admin', or 'captain'
   const [loggedIn, setLoggedIn] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [spireOpen, setSpireOpen] = useState(false);
@@ -334,8 +360,120 @@ function App() {
   const [posted, setPosted] = useState(false);
   const uploadRef = useRef(null);
 
+  // Live Sync State
+  const [liveCaptains, setLiveCaptains] = useState(CAPTAINS);
+  const [activityLog, setActivityLog] = useState(INITIAL_ACTIVITY);
+  const [revenue, setRevenue] = useState(67950);
+  const [ordersCount, setOrdersCount] = useState(89);
+  const [recentSoldItems, setRecentSoldItems] = useState([
+    { name: "Chicken Dum Biryani", qty: 2, price: 598, time: "2 min ago" },
+    { name: "Loose Prawns", qty: 1, price: 349, time: "5 min ago" },
+  ]);
+
+  const handleOrderComplete = (captainId, amount, itemsCount, paymentMode, items = []) => {
+    setRevenue(prev => prev + amount);
+    setOrdersCount(prev => prev + 1);
+    
+    if (items.length > 0) {
+      const formattedItems = items.map(it => ({ name: it.n, qty: it.q, price: it.p * it.q, time: "Just now" }));
+      setRecentSoldItems(prev => [...formattedItems, ...prev].slice(0, 5));
+    }
+    
+    setLiveCaptains(prev => prev.map(c => {
+      if (c.id === captainId) {
+        return { ...c, sales: c.sales + amount, orders: c.orders + 1 };
+      }
+      return c;
+    }));
+
+    const captain = liveCaptains.find(c => c.id === captainId);
+    const newActivity = {
+      id: Date.now(),
+      text: `${captain?.name || 'Staff'} closed Table ${Math.floor(Math.random()*15)+1} bill for ₹${amount.toLocaleString()} (${paymentMode})`,
+      time: "Just now",
+      type: "success"
+    };
+    setActivityLog(prev => [newActivity, ...prev.slice(0, 7)]);
+  };
+
+  const handleKOTSend = (captainName, table) => {
+    const newActivity = {
+      id: Date.now(),
+      text: `${captainName} sent KOT for Table ${table}`,
+      time: "Just now",
+      type: "info"
+    };
+    setActivityLog(prev => [newActivity, ...prev.slice(0, 7)]);
+  };
+
   const title = useMemo(() => navItems.find((x) => x[0] === page)?.[1] ?? "Dashboard", [page]);
-  if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />;
+
+  // --- PREMIUM PORTAL SELECTION (Entry Point) ---
+  if (appMode === null) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FFF5F5] p-6 relative overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#E53935]/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#B71C1C]/5 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="mb-12 text-center z-10 animate-fade-in">
+          <div className="flex items-center justify-center">
+            <img 
+              src="/logo softshape.ai.png" 
+              alt="softshape.ai" 
+              className="h-32 md:h-48 w-auto object-contain drop-shadow-md" 
+            />
+          </div>
+        </div>
+
+        <div className="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2 z-10 px-4">
+          <button 
+            onClick={() => setAppMode('admin')}
+            className="group relative flex flex-col items-start rounded-[32px] border-2 border-white bg-white/70 backdrop-blur-xl p-6 shadow-[0_15px_40px_rgba(183,28,28,0.06)] transition-all duration-500 hover:border-[#E53935] hover:bg-white hover:translate-y-[-8px] text-left"
+          >
+            <div className="mb-4 rounded-2xl bg-[#FFEBEE] p-4 text-[#E53935] transition-all duration-500 group-hover:scale-110 group-hover:bg-[#E53935] group-hover:text-white shadow-inner">
+              <LayoutDashboard size={28} strokeWidth={2.5} />
+            </div>
+            <h2 className="text-xl font-black text-[#1A1A1A] tracking-tight">Admin Portal</h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-[#6B6B6B]">Management suite for revenue, surveillance, and global analytics.</p>
+          </button>
+
+          <button 
+            onClick={() => setAppMode('captain')}
+            className="group relative flex flex-col items-start rounded-[32px] border-2 border-white bg-white/70 backdrop-blur-xl p-6 shadow-[0_15px_40px_rgba(183,28,28,0.06)] transition-all duration-500 hover:border-[#B71C1C] hover:bg-white hover:translate-y-[-8px] text-left"
+          >
+            <div className="mb-4 rounded-2xl bg-[#FFF5F5] p-4 text-[#B71C1C] transition-all duration-500 group-hover:scale-110 group-hover:bg-[#B71C1C] group-hover:text-white shadow-inner">
+              <Smartphone size={28} strokeWidth={2.5} />
+            </div>
+            <h2 className="text-xl font-black text-[#1A1A1A] tracking-tight">Captain App</h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-[#6B6B6B]">Operational interface for table orders and shift tracking.</p>
+          </button>
+        </div>
+
+        <footer className="mt-16 flex flex-col items-center gap-4 opacity-40 z-10 scale-90">
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-[#B71C1C]">Operational Intelligence Ecosystem</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // --- CAPTAIN PORTAL ---
+  if (appMode === 'captain') {
+    return (
+      <CaptainApp 
+        captains={liveCaptains}
+        menuData={MENU_DATA}
+        onOrderComplete={handleOrderComplete}
+        onKOTSend={handleKOTSend}
+        onLogout={() => setAppMode(null)}
+      />
+    );
+  }
+
+  // --- ADMIN PORTAL ---
+  if (!loggedIn) {
+    return <Login onLogin={() => setLoggedIn(true)} onBack={() => setAppMode(null)} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FFF5F5] text-[#1A1A1A]">
@@ -363,13 +501,16 @@ function App() {
             ))}
           </div>
         </div>
+        
+        {/* REMOVED: Switch to Captain App button from here */}
+
         <div className="p-4 border-t border-white/10 bg-black/5 flex-shrink-0">
           <div className="flex items-center justify-between rounded-lg border border-white/20 p-2">
             <div className="flex items-center gap-2 overflow-hidden">
               <div className="h-7 w-7 rounded-full bg-white/20 flex-shrink-0" />
               <div className="text-[10px] font-bold truncate">Ravi's Kitchen</div>
             </div>
-            <LogOut size={14} className="flex-shrink-0 cursor-pointer hover:text-[#EF9A9A] transition-colors" />
+            <LogOut size={14} className="flex-shrink-0 cursor-pointer hover:text-[#EF9A9A] transition-colors" onClick={() => setLoggedIn(false)} />
           </div>
         </div>
       </aside>
@@ -393,13 +534,17 @@ function App() {
           </div>
         </header>
         <main className="page-enter flex-grow overflow-y-auto p-4 md:p-6 bg-[#FFF5F5]">
-          {page === "dashboard" && <Dashboard />}
-          {page === "pos" && <Pos />}
+          {page === "dashboard" && <Dashboard revenue={revenue} ordersCount={ordersCount} activityLog={activityLog} />}
+          {page === "pos" && <Pos onOrderComplete={handleOrderComplete} onKOTSend={handleKOTSend} />}
           {page === "tables" && <Tables onOpen={setTableDetail} />}
           {page === "menu" && <MenuPage onAddDish={() => setDishModalOpen(true)} />}
           {page === "orders" && <Orders />}
           {page === "reports" && <Reports />}
-          {page === "captains" && <Suspense fallback={<div className={card + " p-4"}>Loading captain analytics...</div>}><CaptainPerformanceDashboard /></Suspense>}
+          {page === "captains" && (
+            <Suspense fallback={<div className={card + " p-4"}>Loading captain analytics...</div>}>
+              <CaptainPerformanceDashboard captains={liveCaptains} recentSoldItems={recentSoldItems} />
+            </Suspense>
+          )}
           {page === "payroll" && <Payroll onPayslip={setPayslip} />}
           {page === "marketing" && <Marketing upload={upload} setUpload={setUpload} uploadRef={uploadRef} generated={generated} setGenerated={setGenerated} posted={posted} setPosted={setPosted} />}
           {page === "surveillance" && <Surveillance onIncident={() => setIncident(true)} />}
@@ -464,84 +609,169 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-function Dashboard() {
+function Dashboard({ revenue, ordersCount, activityLog }) {
   const sales = [{ d: "Mon", v: 32 }, { d: "Tue", v: 41 }, { d: "Wed", v: 47 }, { d: "Thu", v: 38 }, { d: "Fri", v: 55 }, { d: "Sat", v: 62 }, { d: "Sun", v: 71 }];
   return <div className="space-y-4">
-    <div className="rounded-[10px] border border-[#EF9A9A] bg-[#FFEBEE] p-4 text-sm md:text-base">Good morning, Varun! 🍽 Today looks busy — 142 orders expected. Chicken Dum Biryani is trending. 3 staff marked absent.</div>
+    <div className="rounded-[10px] border border-[#EF9A9A] bg-[#FFEBEE] p-4 text-sm md:text-base animate-fade-in flex items-center gap-3">
+      <span className="text-xl">✨</span>
+      <p className="font-medium">Live Operational Insight: <span className="font-bold text-[#B71C1C]">Chicken Dum Biryani</span> is moving 15% faster than usual. Average prep time is 12 mins.</p>
+    </div>
+
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       {[
-        { label: "Today's Revenue", value: "₹67,950", sub: "↑12%", color: "text-[#2E7D32]" },
-        { label: "Total Orders", value: "89", sub: "live", color: "text-[#1A1A1A]" },
+        { label: "Today's Revenue", value: `₹${revenue.toLocaleString()}`, sub: "↑12%", color: "text-[#2E7D32]" },
+        { label: "Total Orders", value: ordersCount, sub: "live", color: "text-[#1A1A1A]" },
         { label: "Tables Occupied", value: "14/20", sub: "active", color: "text-[#1A1A1A]" },
         { label: "Staff Present", value: "18/21", sub: "today", color: "text-[#1A1A1A]" },
       ].map((x) => (
-        <div key={x.label} className={card + " border-t-4 border-t-[#E53935] p-3 md:p-4 min-w-0 shadow-sm"}>
+        <div key={x.label} className={card + " border-t-4 border-t-[#E53935] p-3 md:p-4 min-w-0 shadow-sm transition-all hover:translate-y-[-2px]"}>
           <p className="text-[10px] md:text-xs font-bold uppercase tracking-tight text-[#6B6B6B] truncate">{x.label}</p>
           <div className="mt-1 md:mt-2 flex flex-col sm:flex-row sm:items-baseline gap-1 overflow-hidden">
-            <p className="text-xl md:text-2xl lg:text-3xl font-black text-[#1A1A1A] whitespace-nowrap">{x.value}</p>
+            <p className="text-xl md:text-2xl lg:text-3xl font-black text-[#1A1A1A] whitespace-nowrap animate-number-grow">{x.value}</p>
             <p className={`text-[10px] md:text-xs font-bold ${x.color} whitespace-nowrap`}>{x.sub}</p>
           </div>
         </div>
       ))}
     </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className={card + " p-4 overflow-hidden"}>
-        <h3 className="mb-3 font-semibold text-sm md:text-base">Sales - Last 7 days</h3>
-        <div className="h-[220px] w-full min-h-[220px]">
-          <ResponsiveContainer width="100%" height="100%" debounce={50}>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className={card + " p-4 lg:col-span-2 flex flex-col"}>
+        <h3 className="mb-4 font-bold text-sm md:text-base flex items-center gap-2">
+          <ChartNoAxesCombined size={18} className="text-[#E53935]" />
+          Sales Attribution - Last 7 days
+        </h3>
+        <div className="flex-grow h-[250px] w-full min-h-[250px]" style={{ minWidth: 0 }}>
+          <ResponsiveContainer width="99%" height="100%">
             <BarChart data={sales} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="d" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip cursor={{ fill: '#FFEBEE' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-              <Bar dataKey="v" fill="#E53935" radius={[4, 4, 0, 0]} barSize={24} />
+              <Tooltip cursor={{ fill: '#FFEBEE' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }} />
+              <Bar dataKey="v" fill="#E53935" radius={[6, 6, 0, 0]} barSize={32} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-      <div className={card + " p-4"}>
-        <h3 className="mb-3 font-semibold text-sm md:text-base">Top selling items today</h3>
-        <div className="space-y-2">
-          {["Chicken Dum Biryani — 50 plates — ₹15,450", "Mutton Dum Biryani — 28 plates — ₹13,972", "Loose Prawns — 22 plates — ₹8,998", "Veg Biryani — 19 plates — ₹4,921", "Mango Lassi — 45 glasses — ₹4,500"].map((r) => {
-            const [name, qty, price] = r.split(" — ");
-            return (
-              <div key={r} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 rounded-md border border-[#FFCDD2] p-2 text-sm transition-colors hover:bg-[#FFF5F5]">
-                <span className="font-medium">{name}</span>
-                <div className="flex items-center justify-between sm:justify-end gap-3">
-                  <span className="flex h-5 min-w-[32px] items-center justify-center rounded-full bg-[#FFEBEE] px-2 text-[10px] font-bold text-[#B71C1C]">{qty}</span>
-                  <span className="font-bold text-[#1A1A1A] whitespace-nowrap">{price}</span>
-                </div>
+      
+      <div className={card + " p-0 overflow-hidden flex flex-col h-[320px] lg:h-auto"}>
+        <div className="p-4 border-b border-[#FFCDD2] bg-gray-50 flex items-center justify-between">
+          <h3 className="font-bold text-sm md:text-base flex items-center gap-2">
+            <ClipboardList size={18} className="text-[#E53935]" />
+            Live Activity
+          </h3>
+          <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+        </div>
+        <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {activityLog.map((log) => (
+            <div key={log.id} className="flex gap-3 animate-slide-in">
+              <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
+                log.type === "success" ? "bg-green-500" : 
+                log.type === "info" ? "bg-blue-500" : 
+                log.type === "tip" ? "bg-amber-500" : "bg-red-500"
+              }`} />
+              <div className="flex-grow min-w-0">
+                <p className="text-xs font-medium text-[#1A1A1A] leading-relaxed">{log.text}</p>
+                <p className="text-[10px] text-[#6B6B6B] mt-1">{log.time}</p>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div className={card + " p-4"}><h3 className="mb-2 font-semibold">Recent Orders</h3><p className="text-sm">Order#1042 Table 7 ₹850 Preparing</p><p className="text-sm">Order#1041 Table 3 ₹1,200 Served</p><p className="text-sm">Order#1040 Takeaway ₹650 Ready</p><p className="text-sm">Order#1039 Table 12 ₹2,100 Served</p><p className="text-sm">Order#1038 Delivery ₹890 Dispatched</p></div>
-      <div className={card + " p-4"}><h3 className="mb-2 font-semibold">Spire.ai Alerts</h3><p className="text-sm">⚠ Zone violation at Kitchen 14:32</p><p className="text-sm">✦ Post scheduled for Instagram 6PM</p><p className="text-sm">✓ Payroll calculated for May — 21 staff</p></div>
-      <div className={card + " p-4"}><h3 className="mb-2 font-semibold">Inventory Quick View</h3><p className="text-sm">Chicken 35kg remaining</p><p className="text-sm">Rice 80kg</p><p className="text-sm">Mutton 12kg <span className="rounded bg-[#FFEBEE] px-2 text-[#B71C1C]">LOW</span></p><p className="text-sm">Prawns 8kg</p><p className="text-sm">Oil 40L</p></div>
+      <div className={card + " p-4 border-l-4 border-l-blue-500"}>
+        <h3 className="mb-3 font-bold text-[#1A1A1A] flex items-center gap-2">
+          <Bot size={18} className="text-blue-500" />
+          AI Operational Insights
+        </h3>
+        <div className="space-y-3">
+          <p className="text-xs text-[#6B6B6B] flex items-start gap-2">
+            <span className="text-blue-500 font-bold">●</span>
+            Table 7 has been idle for 25 mins after main course. Suggesting dessert menu to Captain Raju.
+          </p>
+          <p className="text-xs text-[#6B6B6B] flex items-start gap-2">
+            <span className="text-blue-500 font-bold">●</span>
+            Stock for <span className="font-bold text-[#1A1A1A]">Basmati Rice</span> is 15% lower than expected velocity.
+          </p>
+        </div>
+      </div>
+
+      <div className={card + " p-4 border-l-4 border-l-[#E53935]"}>
+        <h3 className="mb-3 font-bold text-[#1A1A1A] flex items-center gap-2">
+          <Megaphone size={18} className="text-[#E53935]" />
+          Management Alerts
+        </h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100">
+            <p className="text-xs font-bold text-red-700">Deleted Bill: #1042</p>
+            <span className="text-[10px] bg-red-700 text-white px-1.5 rounded">Action</span>
+          </div>
+          <p className="text-xs text-[#6B6B6B]">₹1,200 manual discount added by Raju (Table 4).</p>
+          <p className="text-xs text-[#6B6B6B] font-medium text-amber-700">⚠ 3 bills cancelled after KOT confirmation.</p>
+        </div>
+      </div>
+
+      <div className={card + " p-4 border-l-4 border-l-green-500"}>
+        <h3 className="mb-3 font-bold text-[#1A1A1A] flex items-center gap-2">
+          <Sparkles size={18} className="text-green-500" />
+          Captain Leaderboard
+        </h3>
+        <div className="space-y-2">
+          {activityLog.filter(l => l.type === "success").slice(0, 3).map((l, i) => (
+            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-[#E53935]">#{i+1}</span>
+                <span className="text-xs font-bold">{l.text.split(' ')[0]}</span>
+              </div>
+              <span className="text-xs font-black text-[#2E7D32]">↑ High</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   </div>;
 }
 
-function Pos() {
+function Pos({ onOrderComplete, onKOTSend }) {
   const [cat, setCat] = useState("All");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
-
+  const [kotStatus, setKotStatus] = useState(null); // 'sending', 'delivered', 'accepted'
+  const [table, setTable] = useState("8");
+  
   const items = useMemo(() => {
     let filtered = MENU_DATA;
     if (cat !== "All") filtered = filtered.filter(x => x.c === cat);
-    if (search) filtered = filtered.filter(x => x.n.toLowerCase().includes(search.toLowerCase()));
-    return filtered.slice(0, 18);
+    if (search) filtered = filtered.filter(x => x.n.toLowerCase().includes(search.toLowerCase()) || x.id?.toLowerCase?.().includes(search.toLowerCase()));
+    return filtered.slice(0, 24);
   }, [cat, search]);
+
+  const subtotal = cart.reduce((a, c) => a + c.p * c.q, 0);
+  const gst = subtotal * 0.05;
+  const total = subtotal + gst;
+
+  const handleSendToKitchen = () => {
+    if (cart.length === 0) return;
+    setKotStatus('sending');
+    onKOTSend("Admin", table);
+    setTimeout(() => {
+      setKotStatus('delivered');
+      setTimeout(() => {
+        setKotStatus('accepted');
+        setTimeout(() => setKotStatus(null), 3000);
+      }, 1500);
+    }, 1500);
+  };
+
+  const handleBill = (paymentMode) => {
+    if (cart.length === 0) return;
+    onOrderComplete("ADMIN", total, cart.length, paymentMode, cart);
+    setCart([]);
+    alert(`Order #1043 closed by Admin. Payment: ${paymentMode}`);
+  };
 
   const addToCart = (item) => {
     setCart(prev => {
       const existing = prev.find(x => x.n === item.n);
-      if (existing) {
-        return prev.map(x => x.n === item.n ? { ...x, q: x.q + 1 } : x);
-      }
+      if (existing) return prev.map(x => x.n === item.n ? { ...x, q: x.q + 1 } : x);
       return [...prev, { ...item, q: 1 }];
     });
   };
@@ -549,10 +779,6 @@ function Pos() {
   const removeFromCart = (name) => {
     setCart(prev => prev.filter(x => x.n !== name));
   };
-
-  const subtotal = cart.reduce((acc, x) => acc + (x.p * x.q), 0);
-  const gst = subtotal * 0.05;
-  const total = subtotal + gst;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -596,7 +822,7 @@ function Pos() {
         <div className={card + " p-4 h-fit lg:sticky lg:top-20 shadow-lg shadow-red-50/50"}>
           <div className="flex items-center justify-between border-b border-[#FFCDD2] pb-3 mb-3">
             <h3 className="font-bold text-[#1A1A1A]">Order <span className="text-[#B71C1C]">#1043</span></h3>
-            <span className="text-xs bg-[#FFEBEE] text-[#B71C1C] px-2 py-0.5 rounded-full font-bold">Table 8</span>
+            <span className="text-xs bg-[#FFEBEE] text-[#B71C1C] px-2 py-0.5 rounded-full font-bold">Table {table}</span>
           </div>
           <div className="space-y-3 max-h-[35vh] lg:max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
             {cart.length === 0 ? (
@@ -625,24 +851,20 @@ function Pos() {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
             {["Cash", "Card", "UPI"].map((x, i) => (
-              <button key={x} className={`rounded-md border py-2 text-xs font-bold transition-all ${i === 2 ? "border-[#E53935] bg-[#FFEBEE] text-[#B71C1C]" : "border-[#FFCDD2] bg-white text-[#6B6B6B] hover:bg-[#FFF5F5]"}`}>
+              <button key={x} onClick={() => handleBill(x)} className={`rounded-md border py-2 text-xs font-bold transition-all ${i === 2 ? "border-[#E53935] bg-[#FFEBEE] text-[#B71C1C]" : "border-[#FFCDD2] bg-white text-[#6B6B6B] hover:bg-[#FFF5F5]"}`}>
                 {x}
               </button>
             ))}
           </div>
           <div className="mt-4 space-y-2">
             <button
-              onClick={() => {
-                if (cart.length > 0) {
-                  alert("KOT Sent to Kitchen! & Bill Generated for Customer.");
-                  setCart([]);
-                }
-              }}
-              className={`${btn} w-full py-3 text-sm shadow-md flex items-center justify-center gap-2`}
+              onClick={handleSendToKitchen}
+              disabled={!!kotStatus}
+              className={`${btn} w-full py-3 text-sm shadow-md flex items-center justify-center gap-2 ${kotStatus ? 'bg-amber-600' : ''}`}
             >
-              <UtensilsCrossed size={16} /> Complete & Print Bill
+              {kotStatus === 'sending' ? 'Sending...' : kotStatus === 'delivered' ? 'Delivered' : kotStatus === 'accepted' ? 'Accepted' : <><UtensilsCrossed size={16} /> Send to Kitchen</>}
             </button>
-            <button onClick={() => setCart([])} className="w-full rounded-md border border-[#FFCDD2] py-2 text-xs font-bold hover:bg-[#FFF5F5]">New Order</button>
+            <button onClick={() => setCart([])} className="w-full rounded-md border border-[#FFCDD2] py-2 text-xs font-bold hover:bg-[#FFF5F5]">Clear Cart</button>
           </div>
         </div>
       </div>
