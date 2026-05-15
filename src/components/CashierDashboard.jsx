@@ -114,6 +114,19 @@ const CashierDashboard = ({ onLogout }) => {
     { id: 'ZM981', type: 'Zomato', customer: 'Kiran T.', amount: 890, status: 'Billing Pending', time: '2m ago', items: 3 },
   ];
 
+  const onlineOrders = [
+    { id: 'SW-9812', platform: 'Swiggy', items: ['Chicken Biryani x2', 'Coke x2'], amount: 960, status: 'Preparing', time: '4m ago' },
+    { id: 'ZM-4521', platform: 'Zomato', items: ['Paneer Tikka x1', 'Butter Naan x3'], amount: 540, status: 'Ready', time: '12m ago' },
+    { id: 'SW-9815', platform: 'Swiggy', items: ['Veg Noodles x2'], amount: 480, status: 'Incoming', time: 'Just now' },
+  ];
+
+  const paymentFeed = [
+    { id: 'TXN-45920', method: 'UPI', amount: 2450, status: 'Success', time: '2m ago' },
+    { id: 'TXN-45921', method: 'CASH', amount: 560, status: 'Success', time: '8m ago' },
+    { id: 'TXN-45922', method: 'CARD', amount: 1290, status: 'Success', time: '15m ago' },
+    { id: 'TXN-45923', method: 'UPI', amount: 890, status: 'Success', time: '22m ago' },
+  ];
+
   const handleSendKOT = () => {
     if (cart.length === 0) return;
     setIsKotSending(true);
@@ -658,10 +671,63 @@ const CashierDashboard = ({ onLogout }) => {
                     </div>
                   )}
 
-                  {['online', 'payments'].includes(activeTab) && (
-                    <div className="bg-white rounded-xl p-8 text-center border border-gray-100 flex flex-col items-center">
-                       <Activity size={24} className="text-[#E53935] mb-2" />
-                       <p className="text-gray-400 font-bold uppercase tracking-widest text-[8px]">{activeTab} Stream Operational</p>
+                  {activeTab === 'online' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {onlineOrders.map(order => (
+                         <div key={order.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:border-[#E53935] transition-all">
+                            <div className="flex justify-between items-start mb-3">
+                               <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${
+                                 order.platform === 'Swiggy' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'
+                               }`}>{order.platform}</span>
+                               <span className="text-[9px] font-black text-gray-400">{order.time}</span>
+                            </div>
+                            <h3 className="text-[11px] font-black text-gray-900 mb-1">{order.id}</h3>
+                            <div className="space-y-0.5 mb-4">
+                               {order.items.map(item => <p key={item} className="text-[9px] text-gray-500 font-bold">{item}</p>)}
+                            </div>
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-50">
+                               <span className="text-[10px] font-black text-gray-900">₹{order.amount}</span>
+                               <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                                 order.status === 'Ready' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                               }`}>{order.status}</span>
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'payments' && (
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                       <div className="p-3 border-b border-gray-100 bg-gray-50/50">
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-900">Live Transaction Stream</h3>
+                       </div>
+                       <div className="divide-y divide-gray-50">
+                          {paymentFeed.map(payment => (
+                            <div key={payment.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                               <div className="flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                    payment.method === 'UPI' ? 'bg-blue-50 text-blue-600' : 
+                                    payment.method === 'CASH' ? 'bg-green-50 text-green-600' : 
+                                    'bg-purple-50 text-purple-600'
+                                  }`}>
+                                     {payment.method === 'UPI' ? <Smartphone size={20} /> : 
+                                      payment.method === 'CASH' ? <Banknote size={20} /> : <CreditCard size={20} />}
+                                  </div>
+                                  <div>
+                                     <p className="text-[10px] font-black text-gray-900">{payment.id}</p>
+                                     <p className="text-[8px] font-bold text-gray-400 uppercase">{payment.time} • via {payment.method}</p>
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <p className="text-[11px] font-black text-gray-900">₹{payment.amount}</p>
+                                  <div className="flex items-center gap-1 justify-end">
+                                     <div className="w-1 h-1 rounded-full bg-green-500" />
+                                     <span className="text-[8px] font-black text-green-600 uppercase">Settled</span>
+                                  </div>
+                               </div>
+                            </div>
+                          ))}
+                       </div>
                     </div>
                   )}
                </div>
