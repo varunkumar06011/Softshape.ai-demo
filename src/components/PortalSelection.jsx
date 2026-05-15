@@ -60,8 +60,8 @@ const PortalSelection = ({ onSelect }) => {
         </button>
       </div>
 
-      <footer className="mt-16 flex flex-col items-center gap-4 opacity-40 z-10 scale-90">
-        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-[#B71C1C]">Restaurant Management System v2.4.0</p>
+      <footer className="mt-16 flex flex-col items-center gap-4 z-10">
+        <p className="text-[11px] font-black uppercase tracking-[0.5em] text-[#B71C1C] drop-shadow-sm">Powered by Vtech</p>
       </footer>
     </div>
   );

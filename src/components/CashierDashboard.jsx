@@ -36,10 +36,7 @@ const CashierDashboard = ({ onLogout }) => {
     }, 4000);
   };
 
-  const [menuItems, setMenuItems] = useState(() => {
-    const saved = localStorage.getItem('softshape_menu');
-    return saved ? JSON.parse(saved) : MENU_DATA;
-  });
+  const [menuItems, setMenuItems] = useState(MENU_DATA);
 
   useEffect(() => {
     const handleStorage = (e) => {
