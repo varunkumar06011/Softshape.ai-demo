@@ -28,12 +28,38 @@ const CashierDashboard = ({ onLogout }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const addNotification = (title, desc, type = 'success') => {
-    const id = Date.now();
-    setNotifications(prev => [{ id, title, desc, type }, ...prev]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4000);
+  const [pastTransactions, setPastTransactions] = useState(() => {
+    const saved = localStorage.getItem('softshape_transactions');
+    return saved ? JSON.parse(saved) : [
+      { id: 'TXN-98245', kot: 'KOT-8812', amount: 2450, time: '14:22', date: '15/05/26', items: 4, method: 'UPI' },
+      { id: 'TXN-98246', kot: 'KOT-8813', amount: 560, time: '14:45', date: '15/05/26', items: 2, method: 'CASH' },
+      { id: 'TXN-98247', kot: 'KOT-8814', amount: 1290, time: '15:10', date: '15/05/26', items: 3, method: 'CARD' }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('softshape_transactions', JSON.stringify(pastTransactions));
+  }, [pastTransactions]);
+
+  const handleSettlement = (method = 'UPI') => {
+    const txnAmount = total || selectedTable?.total || 0;
+    if (txnAmount === 0) return;
+
+    const newTransaction = {
+      id: `TXN-${Math.floor(10000 + Math.random() * 90000)}`,
+      kot: `KOT-${Math.floor(1000 + Math.random() * 9000)}`,
+      amount: txnAmount,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('en-GB'),
+      items: cart.length || (selectedTable?.items?.length || 0),
+      method: method
+    };
+    
+    setPastTransactions(prev => [newTransaction, ...prev]);
+    setCart([]);
+    setSelectedTable(null);
+    setShowPaymentModal(false);
+    addNotification("Payment Success", `Transaction ${newTransaction.id} logged.`, 'success');
   };
 
   const [menuItems, setMenuItems] = useState(MENU_DATA);
@@ -134,7 +160,7 @@ const CashierDashboard = ({ onLogout }) => {
             { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { id: 'pos', label: 'POS Billing', icon: ShoppingCart },
             { id: 'tables', label: 'Tables', icon: Table2 },
-            { id: 'running', label: 'Running Orders', icon: History },
+            { id: 'history', label: 'Past Transactions', icon: History },
             { id: 'online', label: 'Online Orders', icon: Monitor },
             { id: 'kitchen', label: 'Kitchen Status', icon: ChefHat },
             { id: 'payments', label: 'Payments', icon: CreditCard },
@@ -555,30 +581,55 @@ const CashierDashboard = ({ onLogout }) => {
                     </div>
                   )}
 
-                  {activeTab === 'running' && (
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden overflow-x-auto">
-                       <table className="w-full text-left">
-                          <thead className="bg-gray-50 border-b border-gray-100">
-                             <tr>
-                                <th className="p-3 text-[9px] font-black uppercase text-gray-400">ID</th>
-                                <th className="p-3 text-[9px] font-black uppercase text-gray-400">Customer</th>
-                                <th className="p-3 text-[9px] font-black uppercase text-gray-400">Status</th>
-                                <th className="p-3 text-[9px] font-black uppercase text-gray-400 text-right">Bill</th>
-                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                             {orders.map(o => (
-                               <tr key={o.id} className="hover:bg-gray-50 cursor-pointer">
-                                  <td className="p-3 text-[10px] font-black">{o.id}</td>
-                                  <td className="p-3 text-[10px] font-black text-gray-700">{o.customer}</td>
-                                  <td className="p-3">
-                                     <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-blue-100 text-blue-700">{o.status}</span>
-                                  </td>
-                                  <td className="p-3 text-right font-black text-[10px]">₹{o.amount}</td>
-                               </tr>
-                             ))}
-                          </tbody>
-                       </table>
+                  {activeTab === 'history' && (
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                       <div className="overflow-x-auto scrollbar-hide">
+                          <table className="w-full text-left">
+                             <thead className="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                   <th className="p-3 text-[9px] font-black uppercase text-gray-400">TXN ID / KOT</th>
+                                   <th className="p-3 text-[9px] font-black uppercase text-gray-400">Date/Time</th>
+                                   <th className="p-3 text-[9px] font-black uppercase text-gray-400">Method</th>
+                                   <th className="p-3 text-[9px] font-black uppercase text-gray-400 text-right">Amount</th>
+                                </tr>
+                             </thead>
+                             <tbody className="divide-y divide-gray-50">
+                                {pastTransactions.map(txn => (
+                                  <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                                     <td className="p-3">
+                                        <div className="flex flex-col">
+                                           <span className="text-[10px] font-black text-gray-900">{txn.id}</span>
+                                           <span className="text-[8px] font-bold text-[#E53935] uppercase">{txn.kot}</span>
+                                        </div>
+                                     </td>
+                                     <td className="p-3">
+                                        <div className="flex flex-col">
+                                           <span className="text-[9px] font-bold text-gray-700">{txn.date}</span>
+                                           <span className="text-[8px] text-gray-400">{txn.time}</span>
+                                        </div>
+                                     </td>
+                                     <td className="p-3">
+                                        <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${
+                                          txn.method === 'CASH' ? 'bg-green-100 text-green-700' :
+                                          txn.method === 'UPI' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-purple-100 text-purple-700'
+                                        }`}>{txn.method}</span>
+                                     </td>
+                                     <td className="p-3 text-right">
+                                        <p className="text-[10px] font-black text-gray-900">₹{txn.amount}</p>
+                                        <p className="text-[8px] text-gray-400 font-bold uppercase">{txn.items} Items</p>
+                                     </td>
+                                  </tr>
+                                ))}
+                             </tbody>
+                          </table>
+                       </div>
+                       {pastTransactions.length === 0 && (
+                         <div className="p-12 text-center flex flex-col items-center">
+                            <History size={32} className="text-gray-200 mb-2" />
+                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Recent Transactions</p>
+                         </div>
+                       )}
                     </div>
                   )}
 
@@ -703,7 +754,7 @@ const CashierDashboard = ({ onLogout }) => {
                     ))}
                  </div>
                  <button 
-                  onClick={() => { setCart([]); setShowPaymentModal(false); }}
+                  onClick={() => handleSettlement('UPI')}
                   className="mt-2 py-3 bg-[#10B981] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-100 hover:bg-[#059669]"
                  >
                     Authorize Settlement
