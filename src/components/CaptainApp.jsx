@@ -47,10 +47,7 @@ export default function CaptainApp({ onLogout }) {
   const [isCartMinimized, setIsCartMinimized] = useState(true);
   
   // MENU STATE (Persisted and Synced)
-  const [menuItems, setMenuItems] = useState(() => {
-    const saved = localStorage.getItem('softshape_menu');
-    return saved ? JSON.parse(saved) : MENU_DATA;
-  });
+  const [menuItems, setMenuItems] = useState(MENU_DATA);
 
   useEffect(() => {
     localStorage.setItem('softshape_menu', JSON.stringify(menuItems));
