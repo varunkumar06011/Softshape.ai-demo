@@ -348,7 +348,7 @@ export default function CaptainApp({ onLogout }) {
             <img 
               src="/logo softshape.ai.png" 
               alt="Softshape.ai" 
-              className="h-7 sm:h-8 w-auto object-contain mix-blend-multiply shrink-0 brightness-[0.7] contrast-[1.5] saturate-[1.5]" 
+              className="h-10 sm:h-12 w-auto object-contain shrink-0" 
             />
             <span className="text-sm font-black tracking-tighter">
               <span className="text-black">softshape</span>

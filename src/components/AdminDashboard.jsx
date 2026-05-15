@@ -78,7 +78,7 @@ const AdminDashboard = ({ onLogout }) => {
               <img 
                 src="/logo softshape.ai.png" 
                 alt="Softshape.ai" 
-                className="h-9 w-auto object-contain mix-blend-multiply brightness-[0.7] contrast-[1.5] saturate-[1.5]" 
+                className="h-14 w-auto object-contain" 
               />
               <span className="text-lg font-black tracking-tighter">
                 <span className="text-black">softshape</span>
